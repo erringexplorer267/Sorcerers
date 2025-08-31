@@ -5,7 +5,7 @@ from collections import deque, defaultdict, namedtuple
 # ---------- Config ----------
 GRID_W, GRID_H = 20, 12
 CELL = 40
-FPS = 120
+FPS = 8
 NUM_ROBOTS = 4
 NUM_TASKS = 6
 
