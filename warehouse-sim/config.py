@@ -1,0 +1,13 @@
+GRID_SIZE = (10, 15)
+
+NUM_ROBOTS = 2
+
+STEP_INTERVAL_MS = 1000
+
+HOST = "0.0.0.0"
+PORT = 5000
+
+# Reinforcement Learning Rewards
+REWARD_GOAL = 100
+REWARD_COLLISION = -500
+REWARD_MOVE = -1
