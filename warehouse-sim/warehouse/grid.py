@@ -5,6 +5,7 @@ class Grid:
     def __init__(self, rows, cols):
         self.rows = rows
         self.cols = cols
+        # Grid stores permanent obstacle locations
         self.grid = np.zeros((rows, cols), dtype=int)
         self.blocked = []
 
@@ -12,6 +13,7 @@ class Grid:
         """ Marks a cell as a permanent obstacle. """
         if pos not in self.blocked:
             self.blocked.append(pos)
+            # Use tuple indexing for numpy array
             self.grid[pos[0], pos[1]] = -1
 
     def is_valid(self, pos):

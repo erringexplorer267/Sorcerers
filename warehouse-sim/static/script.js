@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const gridDiv = document.getElementById('grid');
     const createTaskBtn = document.getElementById('create-task-btn');
     const clearSelectionBtn = document.getElementById('clear-selection-btn');
+    const resetShiftBtn = document.getElementById('reset-shift-btn');
     const pickupPosSpan = document.getElementById('pickup-pos');
     const dropPosSpan = document.getElementById('drop-pos');
 
@@ -69,7 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Draw tasks
         tasks.forEach(task => {
             const pickupCell = document.getElementById(`cell-${task.pickup[0]}-${task.pickup[1]}`);
             if (pickupCell) pickupCell.classList.add('task-pickup');
@@ -78,11 +78,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dropCell) dropCell.classList.add('task-drop');
         });
 
-        // Draw robots on top of tasks/obstacles
         robots.forEach(robot => {
             const cell = document.getElementById(`cell-${robot.pos[0]}-${robot.pos[1]}`);
             if (cell) {
-                cell.classList.remove('task-pickup', 'task-drop'); // Robot overrides task color
+                cell.classList.remove('task-pickup', 'task-drop');
                 cell.classList.add('robot', `robot-${robot.state}`);
                 cell.textContent = `R${robot.id}`;
             }
@@ -94,9 +93,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const row = parseInt(event.target.dataset.row);
         const col = parseInt(event.target.dataset.col);
 
-        // Prevent selecting obstacle cells for tasks
-        if (obstacles.some(obs => obs[0] === row && obs[1] === col)) {
-            console.warn("Cannot select an obstacle cell for a task.");
+        if (event.target.classList.contains('obstacle')) {
+            console.warn("Cannot select an obstacle cell.");
             return;
         }
 
@@ -141,9 +139,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function sendResetShift() {
+        try {
+            await fetch('/reset_shift', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            console.log("Reset shift signal sent.");
+        } catch (error) {
+            console.error("Failed to send reset signal:", error);
+        }
+    }
+
     // --- Event Listeners ---
     createTaskBtn.addEventListener('click', sendTask);
     clearSelectionBtn.addEventListener('click', clearSelection);
+    resetShiftBtn.addEventListener('click', sendResetShift);
 
     // --- Initial State ---
     createTaskBtn.disabled = true;
