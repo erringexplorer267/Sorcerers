@@ -3,6 +3,7 @@ from warehouse.simulation import Simulation
 import config
 
 app = Flask(__name__)
+# Create a single simulation instance
 sim = Simulation()
 
 @app.route('/')
@@ -12,11 +13,12 @@ def index():
 
 @app.route('/init', methods=['GET'])
 def init_sim():
-    """ Provides initial simulation state to the frontend. """
+    """ Provides initial simulation state to the frontend on page load. """
     return jsonify({
         "grid_size": config.GRID_SIZE,
         "robot_positions": sim.get_robot_positions(),
-        "obstacles": sim.grid.blocked
+        "obstacles": sim.grid.blocked,
+        "step_interval": config.STEP_INTERVAL_MS,
     })
 
 @app.route('/add_task', methods=['POST'])
@@ -40,5 +42,13 @@ def update_sim():
         "tasks": sim.get_task_positions()
     })
 
+@app.route('/reset_shift', methods=['POST'])
+def reset_shift():
+    """ Resets all robots to their starting positions and cancels tasks. """
+    sim.reset_robots()
+    return jsonify({"status": "success", "message": "Shift ended. Robots are returning to depot."})
+
+
 if __name__ == "__main__":
     app.run(host=config.HOST, port=config.PORT, debug=True)
+

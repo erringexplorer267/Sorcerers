@@ -1,33 +1,36 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- UI Element References ---
     const gridDiv = document.getElementById('grid');
     const createTaskBtn = document.getElementById('create-task-btn');
     const clearSelectionBtn = document.getElementById('clear-selection-btn');
+    const resetShiftBtn = document.getElementById('reset-shift-btn');
     const pickupPosSpan = document.getElementById('pickup-pos');
     const dropPosSpan = document.getElementById('drop-pos');
 
+    // --- State Variables ---
     let gridRows = 0;
     let gridCols = 0;
     let selectedPickup = null;
     let selectedDrop = null;
-    let stepInterval = 200;
+    let obstacles = [];
 
-    
+    // --- Initialization ---
     async function initialize() {
         try {
             const response = await fetch('/init');
             const data = await response.json();
             gridRows = data.grid_size[0];
             gridCols = data.grid_size[1];
-            stepInterval = data.step_interval || 200;
+            obstacles = data.obstacles;
             createGrid();
             updateGrid(data.robot_positions, []);
-            // Start the main simulation loop
-            setInterval(mainLoop, stepInterval);
+            setInterval(mainLoop, data.step_interval || 200);
         } catch (error) {
             console.error("Initialization failed:", error);
         }
     }
 
+    // --- Main Simulation Loop ---
     async function mainLoop() {
         try {
             const response = await fetch('/update');
@@ -38,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
+    // --- Grid UI Management ---
     function createGrid() {
         gridDiv.innerHTML = '';
         gridDiv.style.setProperty('--grid-rows', gridRows);
@@ -59,6 +62,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateGrid(robots, tasks) {
         document.querySelectorAll('.cell').forEach(cell => {
             cell.className = 'cell';
+            cell.textContent = '';
+            const r = parseInt(cell.dataset.row);
+            const c = parseInt(cell.dataset.col);
+            if (obstacles.some(obs => obs[0] === r && obs[1] === c)) {
+                cell.classList.add('obstacle');
+            }
         });
 
         tasks.forEach(task => {
@@ -72,24 +81,22 @@ document.addEventListener('DOMContentLoaded', () => {
         robots.forEach(robot => {
             const cell = document.getElementById(`cell-${robot.pos[0]}-${robot.pos[1]}`);
             if (cell) {
-                cell.classList.add('robot');
-                if (robot.state === 'moving_to_pickup') {
-                    cell.classList.add('robot-pickup');
-                } else if (robot.state === 'moving_to_drop') {
-                    cell.classList.add('robot-drop');
-                } else {
-                    cell.classList.add('robot-idle');
-                }
+                cell.classList.remove('task-pickup', 'task-drop');
+                cell.classList.add('robot', `robot-${robot.state}`);
                 cell.textContent = `R${robot.id}`;
             }
         });
     }
 
-
-
+    // --- User Interaction ---
     function onCellClick(event) {
         const row = parseInt(event.target.dataset.row);
         const col = parseInt(event.target.dataset.col);
+
+        if (event.target.classList.contains('obstacle')) {
+            console.warn("Cannot select an obstacle cell.");
+            return;
+        }
 
         if (!selectedPickup) {
             selectedPickup = [row, col];
@@ -104,15 +111,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function clearSelection() {
-        if(selectedPickup) {
-            const pickupCell = document.getElementById(`cell-${selectedPickup[0]}-${selectedPickup[1]}`);
-            if(pickupCell) pickupCell.classList.remove('selected-pickup');
+        if (selectedPickup) {
+            document.getElementById(`cell-${selectedPickup[0]}-${selectedPickup[1]}`)?.classList.remove('selected-pickup');
         }
-        if(selectedDrop) {
-            const dropCell = document.getElementById(`cell-${selectedDrop[0]}-${selectedDrop[1]}`);
-            if(dropCell) dropCell.classList.remove('selected-drop');
+        if (selectedDrop) {
+            document.getElementById(`cell-${selectedDrop[0]}-${selectedDrop[1]}`)?.classList.remove('selected-drop');
         }
-
         selectedPickup = null;
         selectedDrop = null;
         pickupPosSpan.textContent = 'None';
@@ -120,35 +124,40 @@ document.addEventListener('DOMContentLoaded', () => {
         createTaskBtn.disabled = true;
     }
 
+    // --- API Communication ---
     async function sendTask() {
-        if (!selectedPickup || !selectedDrop) {
-            alert("Please select both a pickup and drop-off location.");
-            return;
-        }
-
+        if (!selectedPickup || !selectedDrop) return;
         try {
-            const response = await fetch('/add_task', {
+            await fetch('/add_task', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    pickup: selectedPickup,
-                    drop: selectedDrop,
-                }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pickup: selectedPickup, drop: selectedDrop }),
             });
-            const result = await response.json();
-            console.log("Task creation:", result.message);
             clearSelection();
         } catch (error) {
             console.error("Failed to create task:", error);
         }
     }
 
+    async function sendResetShift() {
+        try {
+            await fetch('/reset_shift', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            console.log("Reset shift signal sent.");
+        } catch (error) {
+            console.error("Failed to send reset signal:", error);
+        }
+    }
 
+    // --- Event Listeners ---
     createTaskBtn.addEventListener('click', sendTask);
-    createTaskBtn.disabled = true;
     clearSelectionBtn.addEventListener('click', clearSelection);
+    resetShiftBtn.addEventListener('click', sendResetShift);
 
+    // --- Initial State ---
+    createTaskBtn.disabled = true;
     initialize();
 });
+

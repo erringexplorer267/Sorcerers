@@ -9,26 +9,38 @@
 <body>
     <div class="container">
         <h1>Warehouse Robot Dashboard</h1>
+
         <div class="controls">
-            <p><strong>Instructions:</strong> Click a cell to select a pickup location, click another cell for drop-off, then click "Create Task".</p>
             <p>
-                Current Pickup: <span id="pickup-pos">None</span> |
-                Current Drop-off: <span id="drop-pos">None</span>
+                <strong>Instructions:</strong> Click a cell for pickup, a second for drop-off, then 'Create Task'.
             </p>
-            <button id="create-task-btn">Create Task</button>
-            <button id="clear-selection-btn">Clear Selection</button>
+            <div id="task-creator">
+                <p>
+                    Current Pickup: <span id="pickup-pos">None</span> |
+                    Current Drop-off: <span id="drop-pos">None</span>
+                </p>
+                <button id="create-task-btn">Create Task</button>
+                <button id="clear-selection-btn">Clear Selection</button>
+            </div>
+             <div class="shift-controls">
+                <button id="reset-shift-btn">End Shift & Reset Robots</button>
+            </div>
         </div>
+
         <div id="grid-container">
             <div id="grid"></div>
         </div>
+
         <div class="legend">
             <div><span class="legend-color robot-idle"></span> Robot (Idle)</div>
-            <div><span class="legend-color robot-pickup"></span> Robot (To Pickup)</div>
-            <div><span class="legend-color robot-drop"></span> Robot (To Drop)</div>
+            <div><span class="legend-color robot-moving_to_pickup"></span> Robot (To Pickup)</div>
+            <div><span class="legend-color robot-moving_to_drop"></span> Robot (To Drop)</div>
             <div><span class="legend-color task-pickup"></span> Pickup Location</div>
             <div><span class="legend-color task-drop"></span> Drop-off Location</div>
+            <div><span class="legend-color obstacle"></span> Obstacle / Shelf</div>
         </div>
     </div>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
+
