@@ -16,7 +16,8 @@ def init_sim():
     return jsonify({
         "grid_size": config.GRID_SIZE,
         "robot_positions": sim.get_robot_positions(),
-        "obstacles": sim.grid.blocked
+        "obstacles": sim.grid.blocked,
+        "step_interval": config.STEP_INTERVAL_MS,
     })
 
 @app.route('/add_task', methods=['POST'])
@@ -27,6 +28,14 @@ def add_task():
     drop = tuple(data['drop'])
     sim.add_task(pickup, drop)
     return jsonify({"status": "success", "message": "Task added."})
+
+@app.route('/add_obstacle', methods=['POST'])
+def add_obstacle():
+    """ Adds a permanent obstacle to the grid. """
+    data = request.json
+    pos = tuple(data['pos'])
+    sim.add_obstacle(pos)
+    return jsonify({"status": "success", "message": f"Obstacle added at {pos}"})
 
 @app.route('/update', methods=['GET'])
 def update_sim():
@@ -42,3 +51,4 @@ def update_sim():
 
 if __name__ == "__main__":
     app.run(host=config.HOST, port=config.PORT, debug=True)
+

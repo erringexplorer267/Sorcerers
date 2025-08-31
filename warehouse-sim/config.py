@@ -1,13 +1,19 @@
+# Grid dimensions
 GRID_SIZE = (10, 15)
 
-NUM_ROBOTS = 2
+NUM_ROBOTS = 4
 
-STEP_INTERVAL_MS = 1000
+STEP_INTERVAL_MS = 500
+
+OBSTACLE_DENSITY = 0.25
 
 HOST = "0.0.0.0"
 PORT = 5000
 
-# Reinforcement Learning Rewards
-REWARD_GOAL = 100
-REWARD_COLLISION = -500
-REWARD_MOVE = -1
+ROBOT_START_POSITIONS = {
+    0: (0, 0),
+    1: (0, 1),
+    2: (0, 2),
+    3: (0, 3),
+}
+
