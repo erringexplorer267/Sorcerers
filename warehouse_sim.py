@@ -1,4 +1,4 @@
-# save as warehouse_sim.py
+#Runs a pygame for visualisation of how the warehouse robots are moving
 import pygame, sys, heapq, random, time
 from collections import deque, defaultdict, namedtuple
 
