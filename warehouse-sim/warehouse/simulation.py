@@ -19,7 +19,6 @@ class Simulation:
         self._generate_shelf_obstacles()
 
     def _generate_shelf_obstacles(self):
-        # ... (code for shelf generation remains the same)
         rows, cols = self.grid.rows, self.grid.cols
         center_aisle_start = (cols - config.SHELF_CENTER_AISLE_WIDTH) // 2
         center_aisle_end = center_aisle_start + config.SHELF_CENTER_AISLE_WIDTH
@@ -37,7 +36,6 @@ class Simulation:
         self._add_random_clutter()
 
     def _add_random_clutter(self):
-        # ... (code for random clutter remains the same)
         rows, cols = self.grid.rows, self.grid.cols
         total_cells = rows * cols
         num_random_obs = int(total_cells * config.RANDOM_OBSTACLE_DENSITY)
@@ -55,14 +53,12 @@ class Simulation:
     
     def _update_dynamic_obstacles(self):
         """ Randomly adds or removes temporary obstacles to simulate a changing environment. """
-        # Occasionally remove old ones
         if self.dynamic_obstacles and random.random() < 0.1:
             self.dynamic_obstacles.remove(random.choice(list(self.dynamic_obstacles)))
 
-        # Add new ones based on chance
         if random.random() < config.DYNAMIC_OBSTACLE_CHANCE:
             rows, cols = self.grid.rows, self.grid.cols
-            for _ in range(10): # Try to find a valid spot
+            for _ in range(10):
                 r = random.randint(1, rows - 1)
                 c = random.randint(0, cols - 1)
                 pos = (r, c)
@@ -73,7 +69,6 @@ class Simulation:
 
 
     def add_task(self, pickup, drop):
-        # ... (code remains the same)
         if self.is_shift_ending:
             print("Cannot add tasks while shift is ending.")
             return
@@ -86,7 +81,6 @@ class Simulation:
         print(f"Task {task['id']} added: Pickup {pickup}, Drop {drop}")
 
     def _get_active_path_reservations(self, exclude_robot_id=None):
-        # ... (code remains the same)
         reserved = set()
         for r in self.robots:
             if r.id != exclude_robot_id and r.state != "idle":
@@ -95,7 +89,6 @@ class Simulation:
         return reserved
 
     def _assign_tasks(self):
-        # ... (code remains the same)
         pending_tasks = [t for t in self.tasks if t['status'] == 'pending']
         if not pending_tasks: return
         for task in pending_tasks:
@@ -119,7 +112,6 @@ class Simulation:
                 print(f"Task {task['id']} assigned to Robot {best_robot.id} (Path distance: {best_path_len})")
 
     def _handle_returns(self):
-        # ... (code remains the same)
         if all(r.pos == r.start_pos and r.state == 'idle' for r in self.robots):
             self.is_shift_ending = False
             self.tasks.clear()
@@ -139,7 +131,6 @@ class Simulation:
         """ Executes one time step of the simulation. """
         self._update_dynamic_obstacles()
 
-        # Let robots react to the environment first
         for robot in self.robots:
             other_robot_paths = self._get_active_path_reservations(exclude_robot_id=robot.id)
             robot.scan_and_react(self.dynamic_obstacles, other_robot_paths)
@@ -155,7 +146,6 @@ class Simulation:
         self.tasks = [t for t in self.tasks if t['status'] != 'completed']
 
     def initiate_shift_end(self):
-        # ... (code remains the same)
         if self.is_shift_ending: return
         print("--- END OF SHIFT INITIATED ---")
         self.is_shift_ending = True

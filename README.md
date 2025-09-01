@@ -30,24 +30,32 @@ The simulation mimics a line-following + obstacle-detection robot with scalabili
 
 ```
 📦 Circuit-Simulator-Robot-Simulation
-├── /circuit_diagram/      → Circuit schematic & wiring images
-├── /arduino_code/         → Arduino UNO sketches (.ino)
-├── /python_backend/       → Flask + MongoDB integration
-├── /dashboard/            → HTML, CSS, JS for dashboard
-├── /presentation/         → Project PPT / PDF
-├── /flowchart/            → System flowchart diagrams
-└── README.md              → Project documentation
+├── Circuit Simulation.png/      → Circuit schematic & wiring images
+├── arduino_code/                → Arduino UNO sketches (.ino)
+├── warehouse-sim/│
+│    ├── app.py                      # Main Flask application file. Runs the web server and simulation.
+│    ├── config.py                   # Central configuration for grid size, robots, layout, etc.
+│    ├── requirements.txt            # Lists the Python dependencies for the project.
+│    │
+│    ├── static/
+│    │   ├── script.js               # Frontend JavaScript for UI interaction and fetching updates.
+│    │   └── style.css               # CSS for styling the web dashboard.
+│    │
+│    ├── templates/
+│    │   └── index.html              # The main HTML file for the web interface.
+│    │
+│    └── warehouse/
+│    │   ├── __init__.py             # Makes the 'warehouse' directory a Python package.
+│    │   ├── grid.py                 # Defines the Grid class, managing static obstacles.
+│    │   ├── robot.py                # Defines the Robot class, including its movement and pathfinding logic.
+│    │   └── simulation.py           # The core simulation engine that manages all robots, tasks, and the main loop.
+├── Sorcerers.pptx/              → Project PPT / PDF
+├── Flow.png/                    → System flowchart diagrams
+└── README.md                    → Project documentation
 ```
 
 ---
 
-## 📸 Project Media
-
-* 🔌 **Circuit Diagram** → ![Circuit Diagram](./circuit_diagram/\[circuit_filename].png)
-* 🖥 **Dashboard Screenshot** → ![Dashboard](./dashboard/\[dashboard_filename].png)
-* 📊 **Flowchart** → ![Flowchart](./flowchart/\[flowchart_filename].png)
-
----
 
 ## 💻 Tech Stack
 
@@ -61,24 +69,28 @@ The simulation mimics a line-following + obstacle-detection robot with scalabili
 
 ### **Software**
 
-Python
+### Python
 
-C: Used in Arduino firmware for low-level hardware control.
+### C:
+ Used in Arduino firmware for low-level hardware control.
 
-Dijkstra’s Algorithm: Optimizes shortest path navigation for the robot.
+### Dijkstra’s Algorithm: 
+Optimizes shortest path navigation for the robot.
 
-KNN Mapping: For path classification and decision-making in navigation.
+### KNN Mapping:
+ For path classification and decision-making in navigation.
 
-VS Code: Primary development environment for coding & debugging.
+### VS Code:
+ Primary development environment for coding & debugging.
 
-NumPy: Supports matrix operations, sensor data processing & calculations.
+### NumPy:
+ Supports matrix operations, sensor data processing & calculations.
 
-Flask: Lightweight backend for IoT dashboard and communication.
+### Flask: 
+Lightweight backend for IoT dashboard and communication.
 
-HTML, CSS, JS: Frontend interface for monitoring and controlling robot.
-
-MongoDB: Cloud-based storage for logging paths, tasks.
-<img width="905" height="576" alt="image" src="https://github.com/user-attachments/assets/289b1514-1dae-4dce-9640-9dba031d6ef1" />
+### HTML, CSS, JS: 
+Frontend interface for monitoring and controlling robot.
 
 ### **Algorithms**
 
@@ -92,8 +104,10 @@ MongoDB: Cloud-based storage for logging paths, tasks.
 ### **1. Clone this Repository**
 
 ```bash
-git clone https://github.com/your-username/Circuit-Simulator-Robot-Simulation.git
-cd Circuit-Simulator-Robot-Simulation
+git clone https://github.com/erringexplorer267/Sorcerers.git
+```
+```python
+cd warehouse-sim
 ```
 
 ### **2. Run Arduino Simulation**
@@ -105,7 +119,12 @@ cd Circuit-Simulator-Robot-Simulation
 ### **3. Start Python Backend**
 
 ```bash
-cd python_backend
+cd warehouse-sim
+```
+```python
+pip install -r requirements.txt
+```
+```bash
 python app.py
 ```
 
@@ -113,21 +132,21 @@ python app.py
 
 ### **4. Open Dashboard**
 
-Open `dashboard/index.html` in a browser to view monitoring system.
+Open `http://127.0.0.1:5000` in a browser to view monitoring system.
 
 ---
 
 ## 📑 Project Presentation
 
 You can view the project presentation here:
-👉 [Project Presentation](./presentation/[presentation_filename].pptx)
+👉 [Project Presentation](./presentation/Sorcerers.pptx)
 
 ---
 
 ## 📌 Future Scope
 
 * Integration with **ROS 2 + Gazebo** for 3D robotics simulation
-* Real-time cloud storage for large-scale warehouse data
+* Real-time cloud storage for large-scale warehouse data on MongoDB
 * Upgrade from DC motors → BLDC/Stepper motors for heavy payload transport
 * MQTT protocol for IoT-based warehouse networking
 
@@ -135,14 +154,14 @@ You can view the project presentation here:
 
 ## 👨‍💻 Authors
 
-* **\[Your Name]** – Circuit Design & Simulation
-* **\[Team Member]** – Backend & Dashboard Development
-* **\[Team Member]** – Algorithm Design
+* **Uttiyo Modak** – Circuit Design & Simulation
+* **Tanushree Das** – Content maker
+* **Suman Chakraborty** – Videography
+* **Subhabrata Mondal** – Backend & Dashboard Development
+
 
 ---
 
-⚡ *This project demonstrates how simulation-based prototypes can scale into real-world warehouse robotics solutions.*
+>⚡ *This project demonstrates how simulation-based prototypes can scale into real-world warehouse robotics solutions.*
 
 ---
-
-Would you like me to **add shields.io badges** (like Python, Arduino, MongoDB logos, etc.) at the top of the README to make it look more professional for GitHub?
