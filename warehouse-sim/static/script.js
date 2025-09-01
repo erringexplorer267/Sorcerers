@@ -12,21 +12,26 @@ document.addEventListener('DOMContentLoaded', () => {
     let gridCols = 0;
     let selectedPickup = null;
     let selectedDrop = null;
-    let obstacles = [];
+    let static_obstacles = [];
 
     // --- Initialization ---
     async function initialize() {
         try {
             const response = await fetch('/init');
+            if (!response.ok) { // Check for server errors
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const data = await response.json();
             gridRows = data.grid_size[0];
             gridCols = data.grid_size[1];
-            obstacles = data.obstacles;
+            static_obstacles = data.obstacles;
             createGrid();
-            updateGrid(data.robot_positions, []);
+            // --- FIX: Use 'robot_data' key and handle initial dynamic obstacles ---
+            updateGrid(data.robot_data, [], data.dynamic_obstacles || []);
             setInterval(mainLoop, data.step_interval || 200);
         } catch (error) {
             console.error("Initialization failed:", error);
+            gridDiv.innerHTML = "<p>Error connecting to the simulation server. Please try refreshing.</p>";
         }
     }
 
@@ -34,8 +39,12 @@ document.addEventListener('DOMContentLoaded', () => {
     async function mainLoop() {
         try {
             const response = await fetch('/update');
+             if (!response.ok) {
+                console.error(`HTTP error! status: ${response.status}`);
+                return;
+            }
             const data = await response.json();
-            updateGrid(data.robot_positions, data.tasks);
+            updateGrid(data.robot_data, data.tasks, data.dynamic_obstacles);
         } catch (error) {
             console.error("Error fetching update:", error);
         }
@@ -59,31 +68,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function updateGrid(robots, tasks) {
+    function updateGrid(robots, tasks, dynamic_obstacles) {
+        // Clear previous state
         document.querySelectorAll('.cell').forEach(cell => {
             cell.className = 'cell';
             cell.textContent = '';
-            const r = parseInt(cell.dataset.row);
-            const c = parseInt(cell.dataset.col);
-            if (obstacles.some(obs => obs[0] === r && obs[1] === c)) {
-                cell.classList.add('obstacle');
-            }
         });
 
+        // Draw static obstacles
+        static_obstacles.forEach(obs => {
+             document.getElementById(`cell-${obs[0]}-${obs[1]}`)?.classList.add('obstacle');
+        });
+        
+        // Draw dynamic obstacles
+        dynamic_obstacles.forEach(obs => {
+            document.getElementById(`cell-${obs[0]}-${obs[1]}`)?.classList.add('dynamic-obstacle');
+        });
+
+        // Draw tasks
         tasks.forEach(task => {
-            const pickupCell = document.getElementById(`cell-${task.pickup[0]}-${task.pickup[1]}`);
-            if (pickupCell) pickupCell.classList.add('task-pickup');
-
-            const dropCell = document.getElementById(`cell-${task.drop[0]}-${task.drop[1]}`);
-            if (dropCell) dropCell.classList.add('task-drop');
+            document.getElementById(`cell-${task.pickup[0]}-${task.pickup[1]}`)?.classList.add('task-pickup');
+            document.getElementById(`cell-${task.drop[0]}-${task.drop[1]}`)?.classList.add('task-drop');
         });
 
+        // Draw robots and their next intended move
         robots.forEach(robot => {
-            const cell = document.getElementById(`cell-${robot.pos[0]}-${robot.pos[1]}`);
-            if (cell) {
-                cell.classList.remove('task-pickup', 'task-drop');
-                cell.classList.add('robot', `robot-${robot.state}`);
-                cell.textContent = `R${robot.id}`;
+            const currentCell = document.getElementById(`cell-${robot.pos[0]}-${robot.pos[1]}`);
+            if (currentCell) {
+                currentCell.classList.add('robot', `robot-${robot.state}`);
+                currentCell.textContent = `R${robot.id}`;
+            }
+            if (robot.next_pos) {
+                const nextCell = document.getElementById(`cell-${robot.next_pos[0]}-${robot.next_pos[1]}`);
+                if (nextCell) {
+                    nextCell.classList.add('next-move', `robot-${robot.state}-next`);
+                }
             }
         });
     }
@@ -93,8 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const row = parseInt(event.target.dataset.row);
         const col = parseInt(event.target.dataset.col);
 
-        if (event.target.classList.contains('obstacle')) {
-            console.warn("Cannot select an obstacle cell.");
+        if (event.target.classList.contains('obstacle') || event.target.classList.contains('robot')) {
+            console.warn("Cannot select an obstacle or robot cell.");
             return;
         }
 
@@ -141,9 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function sendResetShift() {
         try {
-            await fetch('/reset_shift', {
-                method: 'POST'
-            });
+            await fetch('/reset_shift', { method: 'POST' });
             console.log("Reset shift signal sent.");
         } catch (error) {
             console.error("Failed to send reset signal:", error);
@@ -154,7 +171,9 @@ document.addEventListener('DOMContentLoaded', () => {
     createTaskBtn.addEventListener('click', sendTask);
     clearSelectionBtn.addEventListener('click', clearSelection);
     resetShiftBtn.addEventListener('click', sendResetShift);
-    
+
+    // --- Initial State ---
+    createTaskBtn.disabled = true;
     initialize();
 });
 
