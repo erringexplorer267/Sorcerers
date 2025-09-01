@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 from warehouse.simulation import Simulation
 import config
-from heapq import heappop, heappush
 
 app = Flask(__name__)
 # Create a single simulation instance
@@ -20,6 +19,7 @@ def init_sim():
     return jsonify({
         "grid_size": config.GRID_SIZE,
         "robot_data": sim.get_robot_data(),
+        # --- ROBUST FIX: Explicitly convert all collections to lists ---
         "obstacles": list(sim.grid.blocked), 
         "dynamic_obstacles": list(sim.dynamic_obstacles), 
         "step_interval": config.STEP_INTERVAL_MS,
@@ -44,6 +44,7 @@ def update_sim():
     return jsonify({
         "robot_data": sim.get_robot_data(),
         "tasks": sim.get_task_positions(),
+        # --- ROBUST FIX: Explicitly convert all collections to lists ---
         "dynamic_obstacles": list(sim.dynamic_obstacles)
     })
 

@@ -172,6 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
     clearSelectionBtn.addEventListener('click', clearSelection);
     resetShiftBtn.addEventListener('click', sendResetShift);
 
+    // --- Initial State ---
     createTaskBtn.disabled = true;
     initialize();
 });
