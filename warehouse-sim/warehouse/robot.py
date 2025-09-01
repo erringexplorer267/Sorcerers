@@ -9,7 +9,7 @@ class Robot:
         self.grid = grid
         self.path = []
         self.task = None
-        # States: idle, moving_to_pickup, moving_to_drop
+        # States: idle, moving_to_pickup, moving_to_drop, returning
         self.state = "idle"
 
     def calculate_path_for_task(self, task, blocked_cells):
@@ -21,8 +21,10 @@ class Robot:
         if not path_to_pickup:
             return False
 
-        # Add the calculated path to the blocked cells for the next calculation
-        newly_blocked = blocked_cells.union(set(path_to_pickup))
+        # --- BUG FIX ---
+        # When calculating the second leg of the journey, the pickup cell must be a valid
+        # starting point, so we add the pickup path EXCEPT for the destination cell itself.
+        newly_blocked = blocked_cells.union(set(path_to_pickup[:-1]))
         path_to_drop = self._dijkstra(task['pickup'], task['drop'], newly_blocked)
         if not path_to_drop:
             return False
@@ -33,6 +35,15 @@ class Robot:
         self.state = "moving_to_pickup"
         return True
 
+    def calculate_return_path(self, blocked_cells):
+        """ Calculates a path back to the robot's starting depot. """
+        path_to_depot = self._dijkstra(self.pos, self.start_pos, blocked_cells)
+        if path_to_depot:
+            self.path = path_to_depot
+            self.state = "returning"
+            return True
+        return False
+
     def move_step(self):
         """ Moves the robot one step along its pre-calculated path. """
         if not self.path:
@@ -41,20 +52,17 @@ class Robot:
         self.pos = self.path.pop(0)
 
         # --- State Transitions ---
-        if self.task and self.state == 'moving_to_pickup' and self.pos == self.task['pickup']:
+        if self.state == 'moving_to_pickup' and self.pos == self.task['pickup']:
             self.state = "moving_to_drop"
-        elif self.task and self.state == 'moving_to_drop' and self.pos == self.task['drop']:
+        elif self.state == 'moving_to_drop' and self.pos == self.task['drop']:
             print(f"Robot {self.id} completed task {self.task['id']} at {self.pos}.")
             self.task['status'] = 'completed'
             self.task = None
             self.state = "idle" # Become idle at the drop-off location
+        elif self.state == 'returning' and self.pos == self.start_pos:
+            self.state = 'idle'
+            print(f"Robot {self.id} has returned to depot.")
 
-    def reset(self):
-        """ Resets the robot to its initial state at the depot. """
-        self.pos = self.start_pos
-        self.path = []
-        self.task = None
-        self.state = "idle"
 
     def _dijkstra(self, start, goal, blocked_cells=None):
         """
@@ -64,6 +72,7 @@ class Robot:
             blocked_cells = set()
 
         visited = set()
+        # Heap stores: (cost, current_position, path_list)
         heap = [(0, start, [start])]
 
         while heap:
@@ -75,9 +84,12 @@ class Robot:
             visited.add(current)
 
             r, c = current
-            for dr, dc in [(0, 1), (0, -1), (1, 0), (-1, 0)]: # Neighbors
+            # Cardinal directions only (no diagonals)
+            for dr, dc in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
                 next_pos = (r + dr, c + dc)
-                if self.grid.is_valid(next_pos) and not self.grid.is_occupied(next_pos) and next_pos not in blocked_cells:
+                if self.grid.is_valid(next_pos) and \
+                   not self.grid.is_occupied(next_pos) and \
+                   next_pos not in blocked_cells:
                     heappush(heap, (cost + 1, next_pos, path + [next_pos]))
         return [] # No path found
 

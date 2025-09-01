@@ -142,8 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function sendResetShift() {
         try {
             await fetch('/reset_shift', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST'
             });
             console.log("Reset shift signal sent.");
         } catch (error) {
@@ -155,9 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
     createTaskBtn.addEventListener('click', sendTask);
     clearSelectionBtn.addEventListener('click', clearSelection);
     resetShiftBtn.addEventListener('click', sendResetShift);
-
-    // --- Initial State ---
-    createTaskBtn.disabled = true;
+    
     initialize();
 });
 

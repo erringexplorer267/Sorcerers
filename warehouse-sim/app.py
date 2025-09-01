@@ -17,7 +17,7 @@ def init_sim():
     return jsonify({
         "grid_size": config.GRID_SIZE,
         "robot_positions": sim.get_robot_positions(),
-        "obstacles": sim.grid.blocked,
+        "obstacles": list(sim.grid.blocked), # Convert set to list for JSON
         "step_interval": config.STEP_INTERVAL_MS,
     })
 
@@ -44,9 +44,9 @@ def update_sim():
 
 @app.route('/reset_shift', methods=['POST'])
 def reset_shift():
-    """ Resets all robots to their starting positions and cancels tasks. """
-    sim.reset_robots()
-    return jsonify({"status": "success", "message": "Shift ended. Robots are returning to depot."})
+    """ Initiates the animated return of all robots to their depots. """
+    sim.initiate_shift_end()
+    return jsonify({"status": "success", "message": "Shift end initiated. Robots are returning to depot."})
 
 
 if __name__ == "__main__":
