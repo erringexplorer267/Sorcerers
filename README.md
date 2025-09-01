@@ -67,6 +67,8 @@ The simulation mimics a line-following + obstacle-detection robot with scalabili
 * Ultrasonic Sensor
 * DC Motors (prototype)
 
+ [Circuit Simulation](https://www.tinkercad.com/things/9nEOZLKf7XF-copy-of-shiny-hango?sharecode=WYyvK_uxlqQ2b-NWlDeKrFq41PyZ3WCkV0aen5UoIsc)
+
 ### **Software**
 
 ### Python
