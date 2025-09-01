@@ -3,8 +3,8 @@ class Grid:
     def __init__(self, rows, cols):
         self.rows = rows
         self.cols = cols
-        self.blocked = set()  # Using a set for efficient O(1) lookups
-        self.robots = [] # A reference to all robot objects
+        self.blocked = set()  
+        self.robots = []
 
     def add_obstacle(self, pos):
         """ Adds a permanent obstacle to the grid. """

@@ -4,7 +4,7 @@ from .robot import Robot
 import config
 
 class Simulation:
-    """ Manages the overall simulation state, robots, and tasks. """
+    """ Manages the overall simulation state, robots, and tasks, including dynamic obstacles. """
     def __init__(self):
         self.grid = Grid(config.GRID_SIZE[0], config.GRID_SIZE[1])
         self.robots = [
@@ -15,18 +15,17 @@ class Simulation:
         self.tasks = []
         self.task_id_counter = 0
         self.is_shift_ending = False
+        # --- FIX: Restore the dynamic_obstacles attribute ---
+        self.dynamic_obstacles = set() 
         self._generate_shelf_obstacles()
 
     def _generate_shelf_obstacles(self):
         """ Creates a precise, structured shelf layout based on the config file. """
         rows, cols = self.grid.rows, self.grid.cols
-        
         center_aisle_start = (cols - config.SHELF_CENTER_AISLE_WIDTH) // 2
         center_aisle_end = center_aisle_start + config.SHELF_CENTER_AISLE_WIDTH
-
         shelf_cols_left_start = config.SHELF_SIDE_PADDING
         shelf_cols_left_end = center_aisle_start
-        
         shelf_cols_right_start = center_aisle_end
         shelf_cols_right_end = cols - config.SHELF_SIDE_PADDING
 
@@ -37,7 +36,6 @@ class Simulation:
                     is_in_right_cols = shelf_cols_right_start <= c < shelf_cols_right_end
                     if is_in_left_cols or is_in_right_cols:
                         self.grid.add_obstacle((r, c))
-        
         self._add_random_clutter()
 
     def _add_random_clutter(self):
@@ -50,7 +48,6 @@ class Simulation:
         for _ in range(num_random_obs):
             attempts = 0
             while attempts < 100:
-                # Ensure random clutter is within shelf areas
                 r = random.randint(config.SHELF_BLOCKS[0]["start_row"], rows - 1)
                 c = random.randint(0, cols - 1)
                 pos = (r, c)
@@ -58,6 +55,23 @@ class Simulation:
                     self.grid.add_obstacle(pos)
                     break
                 attempts += 1
+
+    def _update_dynamic_obstacles(self):
+        """ Randomly creates or removes temporary obstacles to simulate a dynamic environment. """
+        # Chance to remove an existing obstacle
+        if self.dynamic_obstacles and random.random() < 0.1: # 10% chance to clear one
+             self.dynamic_obstacles.pop()
+
+        # Chance to add a new one
+        if random.random() < config.DYNAMIC_OBSTACLE_CHANCE:
+            rows, cols = self.grid.rows, self.grid.cols
+            for _ in range(10): # Try 10 times to find a valid spot
+                r, c = random.randint(1, rows - 2), random.randint(1, cols - 2)
+                pos = (r, c)
+                if not self.grid.is_occupied(pos) and pos not in self.dynamic_obstacles:
+                    self.dynamic_obstacles.add(pos)
+                    self.grid.dynamic_obstacles.add(pos)
+                    break
 
     def add_task(self, pickup, drop):
         """ Adds a new task if the locations are valid. """
@@ -73,24 +87,16 @@ class Simulation:
         print(f"Task {task['id']} added: Pickup {pickup}, Drop {drop}")
 
     def _get_active_path_reservations(self, exclude_robot_id=None):
-        """ 
-        Gathers cells reserved ONLY by the paths of other ACTIVE (non-idle) robots.
-        This is the critical fix to prevent idle robots from blocking path planning for each other.
-        """
+        """ Gathers cells reserved by other ACTIVE (non-idle) robots. """
         reserved = set()
         for r in self.robots:
             if r.id != exclude_robot_id and r.state != "idle":
-                # Add the robot's current physical position if it's moving
                 reserved.add(r.pos)
-                # Add all the cells in its planned future path
                 reserved.update(r.path)
         return reserved
 
     def _assign_tasks(self):
-        """
-        Assigns pending tasks to the robot with the shortest ACTUAL path,
-        ensuring optimal routing around obstacles and other moving robots.
-        """
+        """ Assigns pending tasks to the robot with the shortest ACTUAL path. """
         pending_tasks = [t for t in self.tasks if t['status'] == 'pending']
         if not pending_tasks: return
 
@@ -100,42 +106,33 @@ class Simulation:
             
             potential_assignments = []
             for robot in idle_robots:
-                # Find the true path cost, avoiding only shelves and ACTIVE paths.
                 blocked_for_check = self._get_active_path_reservations(exclude_robot_id=robot.id)
                 path_to_pickup = robot._dijkstra(robot.pos, task['pickup'], blocked_for_check)
                 
                 if path_to_pickup:
-                    path_len = len(path_to_pickup)
-                    potential_assignments.append((path_len, robot))
+                    potential_assignments.append((len(path_to_pickup), robot))
 
             if not potential_assignments:
-                # This task is currently unreachable by any idle robot. Provide feedback.
-                print(f"Task {task['id']} at {task['pickup']} is temporarily blocked by other moving robots. Waiting...")
+                print(f"Task {task['id']} at {task['pickup']} is temporarily blocked. Waiting...")
                 continue
 
-            # Sort by actual path length to find the truly most efficient robot
             potential_assignments.sort(key=lambda x: x[0])
             best_path_len, best_robot = potential_assignments[0]
 
-            # Formally assign the task by calculating its full path
             blocked_cells = self._get_active_path_reservations(exclude_robot_id=best_robot.id)
             if best_robot.calculate_path_for_task(task, blocked_cells):
                 task['status'] = 'assigned'
                 print(f"Task {task['id']} assigned to Robot {best_robot.id} (True path distance: {best_path_len})")
 
     def _handle_returns(self):
-        """ 
-        Manages the CONCURRENT and collision-free animated return of all robots to their depots.
-        This uses a dynamic, prioritized path reservation system.
-        """
+        """ Manages the concurrent and collision-free return of all robots. """
         if all(r.pos == r.start_pos and r.state == 'idle' for r in self.robots):
             self.is_shift_ending = False
             self.tasks.clear()
-            print("--- All robots have returned. Shift ended. Ready for new day. ---")
+            print("--- All robots have returned. Shift ended. ---")
             return
 
         currently_reserved = self._get_active_path_reservations()
-
         robots_to_dispatch = sorted(
             [r for r in self.robots if r.state != 'returning' and r.pos != r.start_pos],
             key=lambda r: r.id
@@ -146,9 +143,9 @@ class Simulation:
             if path_found:
                 currently_reserved.update(robot.path)
 
-
     def step(self):
         """ Executes one time step of the simulation. """
+        self._update_dynamic_obstacles()
         if self.is_shift_ending:
             self._handle_returns()
         else:
@@ -160,9 +157,9 @@ class Simulation:
         self.tasks = [t for t in self.tasks if t['status'] != 'completed']
 
     def initiate_shift_end(self):
-        """ Starts the process of ending the shift and returning all robots. """
+        """ Starts the process of ending the shift. """
         if self.is_shift_ending: return
-        print("--- END OF SHIFT INITIATED: Returning all robots to depot. ---")
+        print("--- END OF SHIFT INITIATED ---")
         self.is_shift_ending = True
         
         for task in self.tasks:
@@ -172,8 +169,13 @@ class Simulation:
         for robot in self.robots:
             robot.task = None
 
-    def get_robot_positions(self):
-        return [{"id": r.id, "pos": r.pos, "state": r.state} for r in self.robots]
+    def get_robot_data(self):
+        """ Returns data for all robots, including their next intended move. """
+        robot_data = []
+        for r in self.robots:
+            next_pos = r.path[0] if r.path else None
+            robot_data.append({"id": r.id, "pos": r.pos, "state": r.state, "next_pos": next_pos})
+        return robot_data
 
     def get_task_positions(self):
         return [t for t in self.tasks if t['status'] in ['pending', 'assigned']]

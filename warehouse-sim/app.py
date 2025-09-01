@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 from warehouse.simulation import Simulation
 import config
+from heapq import heappop, heappush
 
 app = Flask(__name__)
 # Create a single simulation instance
@@ -13,11 +14,14 @@ def index():
 
 @app.route('/init', methods=['GET'])
 def init_sim():
-    """ Provides initial simulation state to the frontend on page load. """
+    """ 
+    Provides initial simulation state to the frontend on page load.
+    """
     return jsonify({
         "grid_size": config.GRID_SIZE,
-        "robot_positions": sim.get_robot_positions(),
-        "obstacles": list(sim.grid.blocked), # Convert set to list for JSON
+        "robot_data": sim.get_robot_data(),
+        "obstacles": list(sim.grid.blocked), 
+        "dynamic_obstacles": list(sim.dynamic_obstacles), 
         "step_interval": config.STEP_INTERVAL_MS,
     })
 
@@ -38,13 +42,14 @@ def update_sim():
     """
     sim.step()
     return jsonify({
-        "robot_positions": sim.get_robot_positions(),
-        "tasks": sim.get_task_positions()
+        "robot_data": sim.get_robot_data(),
+        "tasks": sim.get_task_positions(),
+        "dynamic_obstacles": list(sim.dynamic_obstacles)
     })
 
 @app.route('/reset_shift', methods=['POST'])
 def reset_shift():
-    """ Initiates the animated return of all robots to their depots. """
+    """ Starts the process of returning all robots to their depots. """
     sim.initiate_shift_end()
     return jsonify({"status": "success", "message": "Shift end initiated. Robots are returning to depot."})
 
